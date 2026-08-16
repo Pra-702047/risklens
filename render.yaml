@@ -2,9 +2,8 @@ services:
   - type: web
     name: risklens-backend
     env: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -14,6 +13,8 @@ services:
         sync: false # You will need to enter this in the Render dashboard manually
       - key: ENVIRONMENT
         value: production
+      - key: PYTHONPATH
+        value: "/opt/render/project/src:/opt/render/project/src/backend"
 
 databases:
   - name: risklens-db
