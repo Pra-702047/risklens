@@ -2,11 +2,18 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
-# Read from environment, default to localhost for local non-docker dev
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://postgres:postgres@localhost:5432/risklens"
-)
+db_url = os.getenv("DATABASE_URL")
+if not db_url or db_url.strip() == "":
+    db_url = os.getenv("POSTGRES_URL")
+
+if not db_url or db_url.strip() == "":
+    db_url = "postgresql://postgres:postgres@localhost:5432/risklens"
+
+# SQLAlchemy 1.4+ requires postgresql:// instead of postgres://
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+DATABASE_URL = db_url
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
