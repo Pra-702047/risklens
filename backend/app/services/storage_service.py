@@ -5,7 +5,11 @@ from fastapi import UploadFile, HTTPException, status
 from pathlib import Path
 
 # MVP Local Storage Directory
-UPLOAD_DIR = Path("uploads/evidence")
+if os.environ.get("VERCEL"):
+    UPLOAD_DIR = Path("/tmp/uploads/evidence")
+else:
+    UPLOAD_DIR = Path("uploads/evidence")
+    
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_MIME_TYPES = {
