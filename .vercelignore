@@ -1,0 +1,5 @@
+backend/
+database/
+deployment/
+render.yaml
+docker-compose.yml
