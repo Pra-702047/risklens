@@ -19,5 +19,4 @@ services:
 databases:
   - name: risklens-db
     databaseName: risklens
-    user: postgres
     plan: free
