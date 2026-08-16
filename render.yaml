@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: risklens-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: risklens-db
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false # You will need to enter this in the Render dashboard manually
+      - key: ENVIRONMENT
+        value: production
+
+databases:
+  - name: risklens-db
+    databaseName: risklens
+    user: postgres
+    plan: free
