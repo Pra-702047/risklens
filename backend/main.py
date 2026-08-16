@@ -21,7 +21,10 @@ try:
     from app.core.database import Base, engine
     from fastapi.middleware.cors import CORSMiddleware
 
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as db_err:
+        print(f"Warning: Could not create tables. Database might be offline: {db_err}")
 
     app.title = "RiskLens API"
     app.description = "Backend API for RiskLens platform"
