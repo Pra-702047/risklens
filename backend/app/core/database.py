@@ -7,6 +7,9 @@ if not db_url or db_url.strip() == "" or db_url.strip() == "POSTGRES_URL":
     db_url = os.getenv("POSTGRES_URL")
 
 if not db_url or db_url.strip() == "" or db_url.strip() == "POSTGRES_URL":
+    db_url = os.getenv("STORAGE_URL")
+
+if not db_url or db_url.strip() == "" or db_url.strip() == "POSTGRES_URL":
     db_url = "postgresql://postgres:postgres@localhost:5432/risklens"
 
 # Strip surrounding quotes if the user accidentally added them
