@@ -2,7 +2,7 @@ import json
 from google import genai
 from ai.config import config
 
-client = genai.Client(api_key=config.gemini_api_key)
+client = genai.Client(api_key=config.gemini_api_key) if config.gemini_api_key else None
 
 def generate_embedding(text: str) -> list[float]:
     """

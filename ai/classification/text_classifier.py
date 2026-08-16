@@ -8,7 +8,7 @@ from ai.config import config
 
 # We need to construct the client.
 # Note: Google GenAI uses `genai.Client(api_key=...)`
-client = genai.Client(api_key=config.gemini_api_key)
+client = genai.Client(api_key=config.gemini_api_key) if config.gemini_api_key else None
 
 class ClassificationResult(BaseModel):
     category: str

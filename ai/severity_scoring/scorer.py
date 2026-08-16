@@ -7,7 +7,7 @@ from typing import List
 from ai.config import config
 from app.modules.severity.models import PriorityEnum
 
-client = genai.Client(api_key=config.gemini_api_key)
+client = genai.Client(api_key=config.gemini_api_key) if config.gemini_api_key else None
 
 class SeverityResult(BaseModel):
     priority: PriorityEnum
