@@ -90,6 +90,7 @@ def seed_demo():
     except Exception as e:
         print(f"Error seeding demo data: {e}")
         db.rollback()
+        raise e
     finally:
         db.close()
 
