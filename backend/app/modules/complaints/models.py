@@ -1,7 +1,10 @@
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Enum, Integer, Float, Boolean
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Enum, Integer, Float, Boolean, LargeBinary
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from datetime import datetime, timezone
+from app.modules.sla.models import SLAStatus
+from app.modules.incidents.models import Incident
+from app.modules.geo.models import Ward
 import enum
 
 class ComplaintStatus(str, enum.Enum):
@@ -22,6 +25,7 @@ class AnalysisStatus(str, enum.Enum):
     OVERRIDDEN = "OVERRIDDEN"
     REJECTED = "REJECTED"
     EXPIRED = "EXPIRED"
+    FAILED = "FAILED"
 
 class ReviewStatus(str, enum.Enum):
     AUTO_ACCEPTED = "AUTO_ACCEPTED"
@@ -114,7 +118,8 @@ class Evidence(Base):
     complaint_id = Column(String, ForeignKey("complaints.id"), nullable=False)
     field_action_id = Column(String, ForeignKey("field_actions.id"), nullable=True) # Added for tracing actions
     
-    file_url = Column(String, nullable=False)
+    file_url = Column(String, nullable=True) # Will store the new API endpoint URL
+    file_data = Column(LargeBinary, nullable=True) # Binary image data stored in Postgres
     file_type = Column(String, nullable=False) # e.g. CITIZEN_PHOTO, AFTER_PHOTO
     mime_type = Column(String, nullable=True) # e.g. image/jpeg
     file_size = Column(Integer, nullable=True) # Bytes
@@ -124,3 +129,19 @@ class Evidence(Base):
     uploaded_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     complaint = relationship("Complaint", back_populates="evidence")
+
+class ComplaintStatusHistory(Base):
+    __tablename__ = "complaint_status_history"
+    
+    id = Column(String, primary_key=True, index=True)
+    complaint_id = Column(String, ForeignKey("complaints.id"), index=True, nullable=False)
+    
+    from_status = Column(String, nullable=True)
+    to_status = Column(String, nullable=False)
+    
+    changed_by_user_id = Column(String, nullable=False) # The UID of whoever made the change
+    notes = Column(Text, nullable=True)
+    
+    changed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    
+    complaint = relationship("Complaint", backref="status_history")

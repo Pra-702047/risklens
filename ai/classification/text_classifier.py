@@ -17,23 +17,26 @@ class ClassificationResult(BaseModel):
     reason_codes: List[str]
 
 def classify_text(text: str) -> dict:
+    if not client:
+        raise ValueError("GEMINI_API_KEY is missing from environment. Cannot perform AI analysis.")
+
     prompt_path = os.path.join(os.path.dirname(__file__), "prompts", "classification_prompt.txt")
     with open(prompt_path, "r") as f:
         system_prompt = f.read()
         
-    # We enforce structured JSON response via the SDK
-    response = client.models.generate_content(
-        model=config.model_name,
-        contents=text,
-        config=types.GenerateContentConfig(
-            system_instruction=system_prompt,
-            response_mime_type="application/json",
-            response_schema=ClassificationResult,
-            temperature=0.1
-        )
-    )
-    
     try:
+        # We enforce structured JSON response via the SDK
+        response = client.models.generate_content(
+            model=config.model_name,
+            contents=text,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                response_mime_type="application/json",
+                response_schema=ClassificationResult,
+                temperature=0.1
+            )
+        )
+        
         result = json.loads(response.text)
         return {
             "predicted_category": result.get("category", "OTHER"),
@@ -45,12 +48,4 @@ def classify_text(text: str) -> dict:
             "model_version": "latest" # Could be pinned version
         }
     except Exception as e:
-        return {
-            "predicted_category": "OTHER",
-            "subcategory": "error",
-            "confidence": 0.0,
-            "reason_codes": [f"Parsing error: {str(e)}"],
-            "model_provider": "google",
-            "model": config.model_name,
-            "model_version": "latest"
-        }
+        raise ValueError(f"AI API call failed: {str(e)}")

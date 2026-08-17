@@ -7,7 +7,15 @@ import Link from "next/link";
 export default function OfficerDashboard() {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterPriority, setFilterPriority] = useState("ALL");
   const router = useRouter();
+
+  const filteredComplaints = complaints.filter((c: any) => {
+    if (filterStatus !== "ALL" && c.status !== filterStatus) return false;
+    if (filterPriority !== "ALL" && c.priority !== filterPriority) return false;
+    return true;
+  });
 
   useEffect(() => {
     const fetchQueue = async () => {
@@ -80,6 +88,32 @@ export default function OfficerDashboard() {
           </div>
         </div>
 
+        {/* Filters */}
+        <div className="flex gap-4 mb-4">
+          <select 
+            className="bg-slate-800 text-white border border-slate-700 rounded-md p-2 text-sm"
+            onChange={(e) => setFilterStatus(e.target.value)}
+            value={filterStatus}
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="ASSIGNED">Assigned</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="RESOLVED">Resolved</option>
+          </select>
+
+          <select 
+            className="bg-slate-800 text-white border border-slate-700 rounded-md p-2 text-sm"
+            onChange={(e) => setFilterPriority(e.target.value)}
+            value={filterPriority}
+          >
+            <option value="ALL">All Priorities</option>
+            <option value="P0">P0 - Critical</option>
+            <option value="P1">P1 - High</option>
+            <option value="P2">P2 - Medium</option>
+            <option value="P3">P3 - Low</option>
+          </select>
+        </div>
+
         {/* Data Table */}
         <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
           <table className="w-full text-left border-collapse">
@@ -95,10 +129,10 @@ export default function OfficerDashboard() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={5} className="p-8 text-center text-slate-500">Loading queue...</td></tr>
-              ) : complaints.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-slate-500">Queue is clear.</td></tr>
+              ) : filteredComplaints.length === 0 ? (
+                <tr><td colSpan={5} className="p-8 text-center text-slate-500">No complaints match the selected filters.</td></tr>
               ) : (
-                complaints.map((c: any) => (
+                filteredComplaints.map((c: any) => (
                   <tr key={c.id} className="border-b border-slate-800 hover:bg-slate-800/50 transition-colors">
                     <td className="p-4">
                       <span className={`px-2 py-1 rounded text-xs font-bold ${
@@ -109,7 +143,15 @@ export default function OfficerDashboard() {
                         {c.priority || "P3"}
                       </span>
                     </td>
-                    <td className="p-4 font-medium">{c.category}</td>
+                    <td className="p-4 font-medium">
+                      {c.category === "UNKNOWN" || !c.category ? (
+                        <span className="text-yellow-500 flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Uncategorized
+                        </span>
+                      ) : (
+                        c.category
+                      )}
+                    </td>
                     <td className="p-4 text-sm text-slate-400 truncate max-w-xs">{c.address}</td>
                     <td className="p-4">
                       <span className="text-xs uppercase font-medium text-slate-400">{c.status}</span>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { loginUser } from "@/lib/firebase/auth";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function CitizenLogin() {
   const [email, setEmail] = useState("");
@@ -21,26 +22,28 @@ export default function CitizenLogin() {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">Citizen Login</h1>
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-        <form onSubmit={handleLogin} className="space-y-4">
+    <div className="flex h-[calc(100vh-64px)] items-center justify-center bg-gray-50 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-10">
+      <div className="w-full max-w-md risklens-card">
+        <h1 className="text-3xl font-black mb-6 text-center text-risklens-dark">
+          Citizen <span className="text-risklens-primary">Login</span>
+        </h1>
+        {error && <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-xl border border-red-100">{error}</p>}
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Email</label>
             <input 
               type="email" 
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" 
+              className="risklens-input" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Password</label>
             <input 
               type="password" 
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" 
+              className="risklens-input" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -48,12 +51,20 @@ export default function CitizenLogin() {
           </div>
           <button 
             type="submit" 
-            className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700"
+            className="w-full btn-primary"
           >
-            Login
+            Login to RiskLens
           </button>
         </form>
+        
+        <div className="mt-8 text-center text-sm text-gray-600 border-t pt-6">
+          Don't have an account?{" "}
+          <Link href="/citizen/register" className="text-risklens-primary font-bold hover:text-risklens-deep transition-colors">
+            Sign up here
+          </Link>
+        </div>
       </div>
     </div>
   );
 }
+

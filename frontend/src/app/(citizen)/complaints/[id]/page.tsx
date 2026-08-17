@@ -88,7 +88,7 @@ export default function CitizenComplaintDetails({ params }: { params: { id: stri
           {/* Timeline Sidebar */}
           <div className="md:col-span-1 bg-slate-900 p-6 rounded-xl border border-slate-800 h-fit">
             <h2 className="text-lg font-bold text-white mb-6">Tracking</h2>
-            <StatusTimeline status={complaint.status} />
+            <StatusTimeline status={complaint.status} events={complaint.status_history} />
           </div>
 
           {/* Main Details */}

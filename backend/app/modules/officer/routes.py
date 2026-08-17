@@ -62,5 +62,10 @@ def submit_field_action(
     db: Session = Depends(get_db),
     current_officer: Officer = Depends(get_current_officer)
 ):
-    action = log_field_action(db, complaint_id, current_officer, action_type, notes)
-    return {"message": "Field action logged", "action_id": action.id, "new_status": action_type}
+    print(f"DEBUG: submit_field_action called for {complaint_id} with {action_type} by officer {current_officer.id}")
+    try:
+        action = log_field_action(db, complaint_id, current_officer, action_type, notes)
+        return {"message": "Field action logged", "action_id": action.id, "new_status": action_type}
+    except Exception as e:
+        print(f"DEBUG: log_field_action raised {repr(e)}")
+        raise e

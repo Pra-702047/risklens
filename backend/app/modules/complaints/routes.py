@@ -21,10 +21,26 @@ async def analyze_complaint_draft(
 ):
     # Pass to AI layer. We skip passing the physical file to AI for now, 
     # but the architecture is ready.
-    ai_result = get_ai_classification(description, files)
-    
-    # Save the AI draft Analysis record
-    analysis = save_ai_analysis_draft(db, current_user.uid, ai_result)
+    import logging
+    try:
+        ai_result = get_ai_classification(description, files)
+        analysis = save_ai_analysis_draft(db, current_user.uid, ai_result)
+    except ValueError as e:
+        logging.error(f"AI Classification failed: {str(e)}")
+        # Provide fallback draft
+        ai_result = {
+            "predicted_category": "UNKNOWN",
+            "subcategory": "error",
+            "confidence": 0.0,
+            "reason_codes": [],
+            "model_provider": "google",
+            "model": "error",
+            "model_version": "error"
+        }
+        analysis = save_ai_analysis_draft(db, current_user.uid, ai_result)
+        from app.modules.complaints.models import AnalysisStatus
+        analysis.analysis_status = AnalysisStatus.FAILED.value
+        db.commit()
     
     return AIAnalysisResponse(
         analysis_id=analysis.id,
@@ -61,9 +77,10 @@ async def submit_complaint(
     
     # Process files if any
     if files:
+        from app.modules.complaints.models import EvidenceType
         for file in files:
-            file_url = await save_evidence(file)
-            add_evidence(db, db_complaint.id, file_url, file.content_type)
+            file_data = await file.read()
+            add_evidence(db, db_complaint.id, file_data, file.content_type, EvidenceType.CITIZEN_PHOTO)
             
     # Refresh to include evidence in response
     db.refresh(db_complaint)
@@ -81,11 +98,8 @@ def get_my_complaints(
 ):
     complaints = get_citizen_complaints(db, current_user)
     
-    # Stubbing coordinates out for MVP response formatting 
-    # In production, we'd use db.query(Complaint, func.ST_X(Complaint.location)...)
-    for c in complaints:
-        c.longitude = 0.0
-        c.latitude = 0.0
+    # Using standard Floats instead of PostGIS for MVP
+    # Coordinate values are natively loaded from the DB
         
     return complaints
 
@@ -103,8 +117,6 @@ def get_complaint_detail(
     if current_user.role == "CITIZEN" and complaint.user_id != current_user.uid:
         raise HTTPException(status_code=403, detail="Not authorized to view this complaint")
         
-    complaint.longitude = 0.0
-    complaint.latitude = 0.0
     return complaint
 
 from pydantic import BaseModel
@@ -161,5 +173,21 @@ def submit_feedback(
     
     # Audit log
     log_event(db, complaint_id, "CITIZEN_FEEDBACK", old_value=old_status, new_value=complaint.status, actor_id=current_user.uid)
+    from app.modules.complaints.service import log_status_change
+    log_status_change(db, complaint_id, old_status, complaint.status, current_user.uid, f"Feedback submitted: accepted={feedback.resolution_accepted}")
     
     return {"message": "Feedback submitted successfully", "new_status": complaint.status}
+
+from fastapi.responses import Response
+
+@router.get("/evidence/{evidence_id}")
+def get_evidence_file(
+    evidence_id: str,
+    db: Session = Depends(get_db)
+):
+    from app.modules.complaints.models import Evidence
+    evidence = db.query(Evidence).filter(Evidence.id == evidence_id).first()
+    if not evidence or not evidence.file_data:
+        raise HTTPException(status_code=404, detail="Evidence file not found")
+        
+    return Response(content=evidence.file_data, media_type=evidence.mime_type)

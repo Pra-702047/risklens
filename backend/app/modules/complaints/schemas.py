@@ -29,6 +29,17 @@ class ComplaintCreate(BaseModel):
     longitude: float = Field(..., description="GPS Longitude")
     latitude: float = Field(..., description="GPS Latitude")
 
+class StatusHistoryResponse(BaseModel):
+    id: str
+    from_status: Optional[str]
+    to_status: str
+    changed_by_user_id: str
+    notes: Optional[str]
+    changed_at: datetime
+
+    class Config:
+        from_attributes = True
+
 class ComplaintResponse(BaseModel):
     id: str
     user_id: str
@@ -42,6 +53,7 @@ class ComplaintResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     evidence: List[EvidenceResponse] = []
+    status_history: List[StatusHistoryResponse] = []
 
     class Config:
         from_attributes = True

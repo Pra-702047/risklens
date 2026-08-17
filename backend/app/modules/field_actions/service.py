@@ -13,14 +13,30 @@ def log_field_action(db: Session, complaint_id: str, officer: Officer, action_ty
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
         
-    # Verify assignment ownership
+    # Verify assignment ownership or department access
     assignment = db.query(Assignment).filter(
-        Assignment.complaint_id == complaint_id,
-        Assignment.status == AssignmentStatus.CLAIMED
+        Assignment.complaint_id == complaint_id
     ).first()
     
-    if not assignment or assignment.officer_id != officer.id:
-        raise HTTPException(status_code=403, detail="Must claim complaint before taking field action")
+    if assignment and assignment.officer_id != officer.id and assignment.status == AssignmentStatus.CLAIMED:
+        raise HTTPException(status_code=403, detail="Complaint is already claimed by another officer")
+        
+    if complaint.department_id != officer.department_id:
+        raise HTTPException(status_code=403, detail="Complaint does not belong to your department")
+        
+    # Auto-claim if not claimed
+    if not assignment:
+        assignment = Assignment(
+            id=str(uuid.uuid4()),
+            complaint_id=complaint_id,
+            department_id=complaint.department_id,
+            officer_id=officer.id,
+            status=AssignmentStatus.CLAIMED
+        )
+        db.add(assignment)
+    elif assignment.status != AssignmentStatus.CLAIMED:
+        assignment.officer_id = officer.id
+        assignment.status = AssignmentStatus.CLAIMED
         
     # Verify State Transition
     current_state = complaint.status
@@ -47,5 +63,8 @@ def log_field_action(db: Session, complaint_id: str, officer: Officer, action_ty
     
     # Audit trail
     log_event(db, complaint_id, action_type, old_value=old_status, new_value=action_type, actor_id=officer.id)
+    
+    from app.modules.complaints.service import log_status_change
+    log_status_change(db, complaint_id, old_status, complaint.status, officer.id, notes)
     
     return action

@@ -17,9 +17,6 @@ class CurrentUser(BaseModel):
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> CurrentUser:
     token = credentials.credentials
     try:
-        if token == "mock_token":
-            return CurrentUser(uid="mock_uid", email="test@test.com")
-            
         decoded_token = verify_firebase_token(token)
         uid = decoded_token.get("uid")
         
@@ -59,16 +56,19 @@ def get_current_officer(
 
 def require_role(roles: list[str]):
     def role_checker(current_user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)):
-        if "CITIZEN" in roles:
-            # Citizens don't have records in Officer table. 
-            # In MVP, if role is CITIZEN we just assume auth is enough.
-            # Real implementation might check a Citizen table or Firebase custom claims.
+        from app.modules.users.models import Officer, User
+        
+        # Check officers table first
+        officer = db.query(Officer).filter(Officer.firebase_uid == current_user.uid).first()
+        if officer and officer.role in roles:
             return current_user
             
-        officer = db.query(Officer).filter(Officer.firebase_uid == current_user.uid).first()
-        if not officer or officer.role.value not in roles:
-            raise HTTPException(status_code=403, detail="Access denied. Required role not found.")
-        return current_user
+        # Check citizens/users table
+        user = db.query(User).filter(User.id == current_user.uid).first()
+        if user and user.role in roles:
+            return current_user
+            
+        raise HTTPException(status_code=403, detail="Access denied. Required role not found.")
     return role_checker
 
 def require_permission(permission: str):

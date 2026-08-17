@@ -2,6 +2,11 @@ from sqlalchemy import Column, String, Boolean, Integer, DateTime
 from datetime import datetime, timezone
 from app.core.database import Base
 
+class Department(Base):
+    __tablename__ = "departments"
+    id = Column(String, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+
 class RoutingRule(Base):
     __tablename__ = "routing_rules"
     

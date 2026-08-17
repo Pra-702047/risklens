@@ -5,6 +5,7 @@ from app.utils.id_generator import generate_complaint_id
 from app.dependencies import CurrentUser
 import uuid
 from fastapi import HTTPException
+import json
 
 # New pipeline imports
 from app.services.geo_service import get_zone_and_ward_for_point
@@ -32,7 +33,7 @@ def save_ai_analysis_draft(db: Session, uid: str, ai_result: dict) -> ComplaintA
         predicted_category=ai_result.get("predicted_category"),
         subcategory=ai_result.get("subcategory"),
         confidence=confidence,
-        reason_codes=str(ai_result.get("reason_codes", [])),
+        reason_codes=json.dumps(ai_result.get("reason_codes", [])),
         review_status=review_status,
         analysis_status=AnalysisStatus.PENDING_DRAFT.value,
         model_provider=ai_result.get("model_provider"),
@@ -49,7 +50,7 @@ def create_complaint(db: Session, complaint_in: ComplaintCreate, current_user: C
     analysis = db.query(ComplaintAIAnalysis).filter(
         ComplaintAIAnalysis.id == complaint_in.analysis_id,
         ComplaintAIAnalysis.firebase_uid == current_user.uid,
-        ComplaintAIAnalysis.analysis_status == AnalysisStatus.PENDING_DRAFT.value
+        ComplaintAIAnalysis.analysis_status.in_([AnalysisStatus.PENDING_DRAFT.value, AnalysisStatus.FAILED.value])
     ).first()
     
     if not analysis:
@@ -87,6 +88,9 @@ def create_complaint(db: Session, complaint_in: ComplaintCreate, current_user: C
     
     log_event(db, complaint_id, EventType.COMPLAINT_CREATED, new_value=complaint_id, actor_id=current_user.uid)
     
+    from app.modules.complaints.service import log_status_change
+    log_status_change(db, complaint_id, None, ComplaintStatus.SUBMITTED.value, current_user.uid, "Citizen submitted complaint")
+    
     # (Volatile fields not needed as they are now real columns)
     
     # PIPELINE EXECUTION (Synchronous MVP)
@@ -112,6 +116,11 @@ def create_complaint(db: Session, complaint_in: ComplaintCreate, current_user: C
     db.commit()
     log_event(db, complaint_id, EventType.ROUTE_ASSIGNED, new_value=department_id)
     
+    # Auto Assign Officer
+    from app.modules.routing.service import auto_assign_officer
+    auto_assign_officer(db, complaint_id, department_id, zone_id)
+    
+    
     # STEP 5: SLA Calculation
     sla_status = calculate_and_assign_sla(db, complaint_id, db_complaint.priority)
     log_event(db, complaint_id, EventType.SLA_STARTED, new_value=sla_status.due_at.isoformat())
@@ -119,11 +128,17 @@ def create_complaint(db: Session, complaint_in: ComplaintCreate, current_user: C
     db.refresh(db_complaint)
     return db_complaint
 
-def add_evidence(db: Session, complaint_id: str, file_url: str, file_type: str) -> Evidence:
+def add_evidence(db: Session, complaint_id: str, file_data: bytes, mime_type: str, file_type: str) -> Evidence:
+    evidence_id = str(uuid.uuid4())
+    file_url = f"http://127.0.0.1:8000/complaints/evidence/{evidence_id}" # Static for MVP
+    
     db_evidence = Evidence(
-        id=str(uuid.uuid4()),
+        id=evidence_id,
         complaint_id=complaint_id,
         file_url=file_url,
+        file_data=file_data,
+        mime_type=mime_type,
+        file_size=len(file_data),
         file_type=file_type
     )
     db.add(db_evidence)
@@ -137,3 +152,16 @@ def get_citizen_complaints(db: Session, current_user: CurrentUser):
 
 def get_complaint(db: Session, complaint_id: str):
     return db.query(Complaint).filter(Complaint.id == complaint_id).first()
+
+def log_status_change(db: Session, complaint_id: str, from_status: str, to_status: str, user_id: str, notes: str = None):
+    from app.modules.complaints.models import ComplaintStatusHistory
+    history = ComplaintStatusHistory(
+        id=str(uuid.uuid4()),
+        complaint_id=complaint_id,
+        from_status=from_status,
+        to_status=to_status,
+        changed_by_user_id=user_id,
+        notes=notes
+    )
+    db.add(history)
+    db.commit()

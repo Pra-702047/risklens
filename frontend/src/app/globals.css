@@ -1,26 +1,56 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-risklens-primary: #FF6B00;
+  --color-risklens-deep: #E85D00;
+  --color-risklens-dark: #1A1A1A;
+  --color-risklens-gray: #6B7280;
+  --color-risklens-black: #111111;
+  --color-risklens-light: #F7F7F7;
+  
+  /* Standard colors mapping */
+  --color-background: var(--color-risklens-light);
+  --color-foreground: var(--color-risklens-dark);
+  
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #F7F7F7;
+  --foreground: #1A1A1A;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom utilities */
+@layer utilities {
+  .glass-nav {
+    @apply bg-white/90 backdrop-blur-md border-b border-gray-200/50;
+  }
+  
+  .risklens-card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-6 transition-all duration-300 hover:shadow-md hover:border-orange-100;
+  }
+  
+  .risklens-input {
+    @apply w-full rounded-xl border-gray-200 shadow-sm p-4 text-gray-800 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-risklens-primary focus:border-transparent transition-all outline-none;
+  }
+  
+  .btn-primary {
+    @apply bg-risklens-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-risklens-deep transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-gray-800 border border-gray-200 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm;
+  }
+  
+  .btn-dark {
+    @apply bg-risklens-dark text-white px-6 py-3 rounded-xl font-semibold hover:bg-black transition-all shadow-sm;
+  }
 }

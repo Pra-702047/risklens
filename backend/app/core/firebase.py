@@ -6,21 +6,15 @@ def initialize_firebase():
     if not firebase_admin._apps:
         # Check if we have an explicit path to a service account JSON file
         # or if we are using environment variables
-        cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-        if cred_path and os.path.exists(cred_path):
+        cred_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "serviceAccountKey.json")
+        if os.path.exists(cred_path):
             cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred, {
+                'projectId': 'risklens-9f2d4'
+            })
         else:
-            # For testing/mocking, or relying on default application credentials
-            # Alternatively, load individual env vars for a dict credential if needed
-            # cred = credentials.Certificate({
-            #     "type": "service_account",
-            #     "project_id": os.getenv("FIREBASE_PROJECT_ID"),
-            #     "private_key": os.getenv("FIREBASE_PRIVATE_KEY", "").replace('\\n', '\n'),
-            #     "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
-            # })
-            cred = credentials.ApplicationDefault()
-            
-        firebase_admin.initialize_app(cred)
+            # Fallback for CI/CD or environments without the key
+            firebase_admin.initialize_app(options={'projectId': 'risklens-9f2d4'})
 
 initialize_firebase()
 

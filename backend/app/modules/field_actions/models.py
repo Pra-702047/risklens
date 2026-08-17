@@ -15,7 +15,8 @@ class ActionType(str):
 
 # State transition rules mapping (From -> Allowed To)
 VALID_TRANSITIONS = {
-    "SUBMITTED": [ActionType.ACKNOWLEDGE],
+    "SUBMITTED": [ActionType.ACKNOWLEDGE, ActionType.IN_PROGRESS, ActionType.RESOLVED],
+    "ASSIGNED": [ActionType.ACKNOWLEDGE, ActionType.IN_PROGRESS, ActionType.RESOLVED],
     ActionType.ACKNOWLEDGE: [ActionType.IN_PROGRESS, ActionType.RESOLVED],
     ActionType.IN_PROGRESS: [ActionType.ON_SITE, ActionType.ACTION_TAKEN, ActionType.RESOLVED],
     ActionType.ON_SITE: [ActionType.ACTION_TAKEN, ActionType.RESOLVED],

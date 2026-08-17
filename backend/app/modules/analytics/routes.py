@@ -14,7 +14,8 @@ def get_overview(db: Session = Depends(get_db), current_user = Depends(require_r
         "critical_complaints": metrics.get_critical_complaints(db),
         "sla_risk": metrics.get_sla_risk_count(db),
         "sla_breached": metrics.get_sla_breach_count(db),
-        "total_volume": metrics.get_complaint_volume(db)
+        "total_volume": metrics.get_complaint_volume(db),
+        "department_performance": metrics.get_department_performance(db)
     }
 
 @router.get("/ai")
@@ -22,14 +23,7 @@ def get_ai_monitoring(db: Session = Depends(get_db), current_user = Depends(requ
     return {
         "override_rate": metrics.get_ai_override_rate(db),
         "low_confidence_rate": metrics.get_low_confidence_rate(db, 0.8),
-        # In a real system we'd aggregate category accuracy here using SQLAlchemy group_by
-        "category_accuracy": [
-            {"category": "Traffic", "accuracy": 94},
-            {"category": "Road", "accuracy": 89},
-            {"category": "Parking", "accuracy": 91},
-            {"category": "Accident", "accuracy": 97},
-            {"category": "Other", "accuracy": 72}
-        ]
+        "category_accuracy": metrics.get_category_accuracy(db)
     }
 
 @router.get("/map/active")

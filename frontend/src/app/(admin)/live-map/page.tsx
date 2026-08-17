@@ -15,23 +15,26 @@ export default function LiveMap() {
   const [geoData, setGeoData] = useState<any>(null);
 
   useEffect(() => {
-    // In a real app, this would fetch from /admin/analytics/map/active
-    // Mocking the GeoJSON response for MVP to ensure map renders
-    setGeoData({
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [79.0882, 21.1458] }, // Nagpur coordinates
-          properties: { id: "1", priority: "P0", category: "Accident", status: "IN_PROGRESS" }
-        },
-        {
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [79.0811, 21.1500] },
-          properties: { id: "2", priority: "P1", category: "Pothole", status: "OPEN" }
+    const fetchGeoData = async () => {
+      try {
+        const token = localStorage.getItem("token") || localStorage.getItem("firebase_token");
+        const headers: any = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        
+        const res = await fetch("http://localhost:8000/geo/incidents", { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setGeoData(data);
         }
-      ]
-    });
+      } catch (err) {
+        console.error("Failed to load map data:", err);
+      }
+    };
+    
+    fetchGeoData();
+    // Poll every 30 seconds for live updates
+    const interval = setInterval(fetchGeoData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

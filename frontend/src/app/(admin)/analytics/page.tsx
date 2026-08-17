@@ -5,22 +5,41 @@ import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 export default function AnalyticsDashboard() {
-  // Mock Data for MVP
-  const volumeData = [
-    { name: 'Mon', volume: 120 },
-    { name: 'Tue', volume: 150 },
-    { name: 'Wed', volume: 180 },
-    { name: 'Thu', volume: 140 },
-    { name: 'Fri', volume: 200 },
-    { name: 'Sat', volume: 250 },
-    { name: 'Sun', volume: 190 },
-  ];
+  const [volumeData, setVolumeData] = useState([
+    { name: 'Total', volume: 0 }
+  ]);
+  const [slaData, setSlaData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const slaData = [
-    { name: 'Traffic', resolved_in_sla: 85, breached: 15 },
-    { name: 'NMC', resolved_in_sla: 60, breached: 40 },
-    { name: 'PWD', resolved_in_sla: 90, breached: 10 },
-  ];
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const token = localStorage.getItem("token") || localStorage.getItem("firebase_token") || localStorage.getItem("officer_token");
+        const headers: any = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        const res = await fetch("http://localhost:8000/admin/analytics/overview", { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setVolumeData([{ name: 'Total Volume', volume: data.total_volume }]);
+          
+          if (data.department_performance) {
+            const formattedSla = Object.keys(data.department_performance).map(dept => ({
+              name: dept,
+              resolved_in_sla: data.department_performance[dept].resolved || 0,
+              breached: data.department_performance[dept].open || 0 // mapping open to breached for MVP visualization
+            }));
+            setSlaData(formattedSla);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch analytics", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
