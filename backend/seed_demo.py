@@ -46,6 +46,8 @@ def seed_demo():
             )
             db.add(demo_citizen)
             print("Seeded Demo Citizen: demo@risklens.local / Demo@12345")
+        else:
+            demo_citizen.password_hash = get_password_hash("Demo@12345")
             
         # Seed Demo Officer
         demo_officer = db.query(Officer).filter(Officer.email == "officer@risklens.local").first()
@@ -62,6 +64,10 @@ def seed_demo():
             )
             db.add(demo_officer)
             print("Seeded Demo Officer: officer@risklens.local / Officer@123")
+        else:
+            # Overwrite password if missing/incorrect
+            demo_officer.password_hash = get_password_hash("Officer@123")
+            print("Updated existing Demo Officer password")
 
         db.commit()
 
