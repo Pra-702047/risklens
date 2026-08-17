@@ -86,6 +86,15 @@ try:
     def health_check():
         return {"status": "healthy"}
 
+    @app.get("/seed")
+    def seed_database():
+        import seed_demo
+        try:
+            seed_demo.seed_demo()
+            return {"status": "success", "message": "Demo data seeded successfully! You can now log in."}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
 except Exception as e:
     err_msg = traceback.format_exc()
     @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"])
